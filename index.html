@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minhas Contas Fixas</title>
+    <!-- Inclui Tailwind CSS para estilização rápida e responsiva -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Define a fonte Inter para todo o documento -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6; /* Fundo cinza claro */
+            display: flex;
+            justify-content: center;
+            align-items: flex-start; /* Alinha o conteúdo ao topo */
+            min-height: 100vh; /* Altura mínima de 100% da viewport */
+            padding: 2rem 1rem; /* Espaçamento interno */
+            box-sizing: border-box; /* Inclui padding na largura/altura total */
+        }
+    </style>
+    <!-- Vincula o arquivo CSS personalizado -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-gray-100 p-4 sm:p-6 md:p-8">
+    <div class="container bg-white p-6 rounded-xl shadow-lg w-full max-w-md">
+        <h1 class="text-3xl font-bold text-gray-800 mb-6 text-center">Minhas Contas Fixas</h1>
+
+        <!-- Formulário para adicionar nova conta -->
+        <div class="mb-6 bg-blue-50 p-4 rounded-lg">
+            <h2 class="text-lg font-semibold text-blue-800 mb-3">Adicionar Nova Conta</h2>
+            <input type="text" id="novaContaInput" placeholder="Nome da conta (ex: Aluguel)"
+                   class="w-full p-3 mb-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <button id="adicionarContaBtn"
+                    class="w-full bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700 transition duration-300 shadow-md">
+                Adicionar Conta
+            </button>
+        </div>
+
+        <!-- Lista de Contas -->
+        <div>
+            <h2 class="text-lg font-semibold text-gray-700 mb-3">Contas Cadastradas</h2>
+            <ul id="listaContas" class="space-y-3">
+                <!-- As contas serão carregadas aqui pelo JavaScript -->
+                <li class="bg-gray-50 p-4 rounded-lg text-gray-600 text-center">Nenhuma conta adicionada ainda.</li>
+            </ul>
+        </div>
+        
+        <!-- Área para mensagens do usuário -->
+        <div id="mensagem" class="mt-6 p-3 rounded-lg text-center font-medium hidden"></div>
+        
+        <!-- Indicador de carregamento -->
+        <div id="loadingIndicator" class="mt-6 text-center text-blue-600 font-semibold hidden">
+            Carregando contas...
+        </div>
+    </div>
+
+    <!-- Inclui os SDKs do Firebase -->
+    <script type="module">
+        // Importa os módulos necessários do Firebase
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, onSnapshot, updateDoc, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // VAI AQUI SEU CÓDIGO firebaseConfig REAL! SUBSTITUA ESTE BLOCO ABAIXO.
+        const firebaseConfig = {
+            apiKey: "AIzaSyBqTtAkHKAeFhYRFLeIRGU_X0nH2_4Xn90",
+            authDomain: "bill-management13.firebaseapp.com",
+            projectId: "bill-management13",
+            storageBucket: "bill-management13.firebasestorage.app",
+            messagingSenderId: "450207477897",
+            appId: "1:450207477897:web:da67957b579b7b0e1e1658",
+            measurementId: "G-MGLNZ8JZ1J"
+        };
+        // FIM DO BLOCO A SER SUBSTITUÍDO
+
+        // Inicializa o Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        // Referência para a coleção de contas no Firestore
+        // Usamos 'contasFixas' como o nome da coleção, como definido nas regras de segurança
+        const contasCollection = collection(db, "contasFixas");
+
+        const novaContaInput = document.getElementById('novaContaInput');
+        const adicionarContaBtn = document.getElementById('adicionarContaBtn');
+        const listaContas = document.getElementById('listaContas');
+        const mensagemDiv = document.getElementById('mensagem');
+        const loadingIndicator = document.getElementById('loadingIndicator');
+
+        let userId = null; // Variável para armazenar o ID do usuário
+
+        // Função para exibir mensagens ao usuário
+        function exibirMensagem(texto, tipo = 'info') {
+            mensagemDiv.textContent = texto;
+            mensagemDiv.classList.remove('hidden', 'bg-red-200', 'text-red-800', 'bg-green-200', 'text-green-800', 'bg-blue-200', 'text-blue-800');
+            if (tipo === 'erro') {
+                mensagemDiv.classList.add('bg-red-200', 'text-red-800');
+            } else if (tipo === 'sucesso') {
+                mensagemDiv.classList.add('bg-green-200', 'text-green-800');
+            } else { // info
+                mensagemDiv.classList.add('bg-blue-200', 'text-blue-800');
+            }
+            mensagemDiv.style.display = 'block'; // Garante que a div seja visível
+            setTimeout(() => {
+                mensagemDiv.classList.add('hidden');
+                mensagemDiv.style.display = 'none'; // Esconde a div após um tempo
+            }, 3000); // Esconde após 3 segundos
+        }
+
+        // --- Autenticação Firebase ---
+        // Para o seu uso em GitHub Pages, a autenticação anônima será usada.
+        async function authenticateUser() {
+            try {
+                loadingIndicator.classList.remove('hidden');
+                // No ambiente do Google Canvas, a variável __initial_auth_token é usada.
+                // Fora dele (como no GitHub Pages), ela não existe, então usamos signInAnonymously.
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch (error) {
+                console.error("Erro na autenticação:", error);
+                exibirMensagem("Erro ao autenticar. Tente novamente.", "erro");
+            } finally {
+                loadingIndicator.classList.add('hidden');
+            }
+        }
+
+        // Listener para o estado de autenticação
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                userId = user.uid; // Define o ID do usuário
+                console.log("Usuário autenticado:", userId);
+                carregarContas(); // Carrega as contas após autenticação
+                adicionarContaBtn.disabled = false; // Habilita o botão
+                novaContaInput.disabled = false; // Habilita o input
+            } else {
+                userId = null;
+                console.log("Nenhum usuário autenticado.");
+                listaContas.innerHTML = '<li class="bg-gray-50 p-4 rounded-lg text-gray-600 text-center">Faça login para gerenciar suas contas.</li>';
+                adicionarContaBtn.disabled = true; // Desabilita o botão
+                novaContaInput.disabled = true; // Desabilita o input
+                authenticateUser(); // Tenta autenticar se não houver usuário
+            }
+        });
+
+        // --- Adicionar Nova Conta ---
+        adicionarContaBtn.addEventListener('click', async () => {
+            const nomeConta = novaContaInput.value.trim();
+            if (nomeConta === '') {
+                exibirMensagem("Por favor, digite o nome da conta.", "info");
+                return;
+            }
+
+            try {
+                loadingIndicator.classList.remove('hidden');
+                await addDoc(contasCollection, {
+                    nome: nomeConta,
+                    paga: false, // Nova conta sempre começa como não paga
+                    createdAt: new Date(), // Adiciona um timestamp para ordenação
+                    userId: userId // Vincula a conta ao ID do usuário autenticado
+                });
+                novaContaInput.value = ''; // Limpa o input
+                exibirMensagem("Conta adicionada com sucesso!", "sucesso");
+            } catch (e) {
+                console.error("Erro ao adicionar documento: ", e);
+                exibirMensagem("Erro ao adicionar conta. Tente novamente.", "erro");
+            } finally {
+                loadingIndicator.classList.add('hidden');
+            }
+        });
+
+        // --- Carregar e Atualizar Contas em Tempo Real ---
+        // onSnapshot é a função que "ouve" as mudanças no Firestore em tempo real
+        function carregarContas() {
+            if (!userId) return; // Não carrega se o usuário não estiver autenticado
+
+            loadingIndicator.classList.remove('hidden');
+            // A query agora filtra as contas pelo userId para que cada usuário veja apenas suas próprias contas.
+            // Para compartilhar TODAS as contas com TODOS os usuários que acessarem (com autenticação anônima),
+            // você precisaria remover a condição 'where("userId", "==", userId)' nas regras de segurança do Firebase
+            // e também no código JavaScript aqui.
+            // No entanto, para um controle simples entre um grupo que acessa o mesmo link,
+            // a autenticação anônima já dá um ID único para cada "sessão" de navegador.
+            // Se o objetivo é que TODOS vejam A MESMA LISTA sem distinção de usuário,
+            // a linha 'if (data.userId === userId)' dentro do forEach abaixo precisaria ser removida/comentada.
+            // Por enquanto, ela mantém as contas separadas por "usuário" (sessão anônima).
+            onSnapshot(contasCollection, (snapshot) => {
+                listaContas.innerHTML = ''; // Limpa a lista existente
+                const contas = [];
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    // Filtra as contas para mostrar apenas as criadas por este 'userId' anônimo.
+                    // Para um aplicativo verdadeiramente compartilhado (todos veem tudo),
+                    // você removeria este 'if (data.userId === userId)'.
+                    if (data.userId === userId) {
+                        contas.push({ id: doc.id, ...data });
+                    }
+                });
+
+                // Ordena as contas pela data de criação
+                contas.sort((a, b) => a.createdAt.toDate() - b.createdAt.toDate());
+
+                if (contas.length === 0) {
+                     listaContas.innerHTML = '<li class="bg-gray-50 p-4 rounded-lg text-gray-600 text-center">Nenhuma conta adicionada para este usuário.</li>';
+                }
+
+                contas.forEach(conta => {
+                    const li = document.createElement('li');
+                    li.className = `flex items-center justify-between p-4 rounded-lg transition duration-200 ${conta.paga ? 'bg-green-100' : 'bg-white shadow-sm'}`;
+                    li.innerHTML = `
+                        <div class="flex items-center">
+                            <input type="checkbox" id="conta-${conta.id}" ${conta.paga ? 'checked' : ''}
+                                class="form-checkbox h-5 w-5 text-blue-600 rounded focus:ring-blue-500 cursor-pointer">
+                            <label for="conta-${conta.id}" class="ml-3 text-lg ${conta.paga ? 'line-through text-gray-500' : 'text-gray-800'} cursor-pointer">
+                                ${conta.nome}
+                            </label>
+                        </div>
+                        <button data-id="${conta.id}" class="excluir-btn text-red-500 hover:text-red-700 p-2 rounded-full hover:bg-red-50 transition duration-300">
+                            <!-- Ícone de lixeira SVG de Lucide React, adaptado para HTML -->
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trash-2">
+                                <path d="M3 6h18"/>
+                                <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/>
+                                <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+                                <line x1="10" x2="10" y1="11" y2="17"/>
+                                <line x1="14" x2="14" y1="11" y2="17"/>
+                            </svg>
+                        </button>
+                    `;
+                    listaContas.appendChild(li);
+
+                    // Adicionar evento para marcar/desmarcar
+                    li.querySelector(`#conta-${conta.id}`).addEventListener('change', async (e) => {
+                        const docRef = doc(db, "contasFixas", conta.id);
+                        try {
+                            loadingIndicator.classList.remove('hidden');
+                            await updateDoc(docRef, {
+                                paga: e.target.checked
+                            });
+                            exibirMensagem(e.target.checked ? "Conta marcada como paga!" : "Conta desmarcada.", "sucesso");
+                        } catch (error) {
+                            console.error("Erro ao atualizar status: ", error);
+                            exibirMensagem("Erro ao atualizar conta. Tente novamente.", "erro");
+                        } finally {
+                            loadingIndicator.classList.add('hidden');
+                        }
+                    });
+
+                    // Adicionar evento para excluir
+                    li.querySelector('.excluir-btn').addEventListener('click', async (e) => {
+                        const idParaExcluir = e.currentTarget.dataset.id;
+                        const docRef = doc(db, "contasFixas", idParaExcluir);
+                        try {
+                            loadingIndicator.classList.remove('hidden');
+                            await deleteDoc(docRef);
+                            exibirMensagem("Conta excluída com sucesso!", "sucesso");
+                        } catch (error) {
+                            console.error("Erro ao excluir conta: ", error);
+                            exibirMensagem("Erro ao excluir conta. Tente novamente.", "erro");
+                        } finally {
+                            loadingIndicator.classList.add('hidden');
+                        }
+                    });
+                });
+                loadingIndicator.classList.add('hidden');
+            }, (error) => {
+                console.error("Erro ao carregar contas:", error);
+                exibirMensagem("Erro ao carregar contas. Verifique sua conexão.", "erro");
+                loadingIndicator.classList.add('hidden');
+            });
+        }
+    </script>
+</body>
+</html>
