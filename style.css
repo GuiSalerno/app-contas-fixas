@@ -1,0 +1,18 @@
+/* style.css */
+/* Não usamos muito CSS personalizado aqui, pois Tailwind CSS já faz a maior parte do trabalho */
+/* Este arquivo é mais para qualquer ajuste específico ou para demonstração */
+
+/* Exemplo de estilo customizado, se necessário */
+.container {
+    max-width: 500px; /* Limita a largura máxima do contêiner principal */
+}
+
+/* Ocultar a caixa de mensagem por padrão (será exibida via JS) */
+#mensagem {
+    display: none;
+}
+
+/* Ocultar o indicador de carregamento por padrão (será exibido via JS) */
+#loadingIndicator {
+    display: none;
+}
