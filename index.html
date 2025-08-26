@@ -1,0 +1,1469 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minhas Contas Fixas</title>
+    <!-- Inclui Tailwind CSS para estilização rápida e responsiva -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Define a fonte Inter para todo o documento -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6; /* Fundo cinza claro */
+            display: flex;
+            justify-content: center;
+            align-items: flex-start; /* Alinha o conteúdo ao topo */
+            min-height: 100vh; /* Altura mínima de 100% da viewport */
+            padding: 1rem; /* Espaçamento interno */
+            box-sizing: border-box; /* Inclui padding na largura/altura total */
+        }
+        .container {
+            max-width: 500px;
+            width: 100%;
+        }
+        .page-section {
+            display: none; /* Todas as seções de página ocultas por padrão */
+        }
+        .fab-button {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+        }
+        /* Estilos para a mensagem de feedback */
+        #mensagem {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: 500;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.5s ease-in-out, visibility 0.5s ease-in-out;
+            z-index: 5000; /* Garante que fique acima de tudo */
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        #mensagem.show {
+            opacity: 1;
+            visibility: visible;
+        }
+        /* Estilos para o modal de confirmação */
+        #customConfirmModal, #editAccountModal, #editCategoryModal, #exportScopeModal {
+            z-index: 6000; /* Mais alto que a mensagem de feedback */
+        }
+    </style>
+    <!-- Vincula o arquivo CSS personalizado -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-gray-100">
+    <div class="container bg-white p-6 rounded-xl shadow-lg relative">
+        <!-- Indicador de carregamento global -->
+        <div id="loadingIndicator" class="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75 z-20 hidden rounded-xl">
+            <div class="text-blue-600 font-semibold flex flex-col items-center">
+                <svg class="animate-spin h-8 w-8 text-blue-600 mb-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Carregando...
+            </div>
+        </div>
+
+        <!-- Área para mensagens do usuário -->
+        <div id="mensagem"></div> 
+
+        <!-- #################### TELA DE LOGIN #################### -->
+        <section id="loginPage" class="page-section flex flex-col items-center justify-center h-full min-h-[400px]">
+            <h1 class="text-3xl font-bold text-gray-800 mb-8 text-center">Minhas Contas Fixas</h1>
+            <button id="signInGoogleBtn"
+                    class="bg-indigo-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-indigo-700 transition duration-300 shadow-md flex items-center justify-center">
+                <!-- Ícone do Google (SVG mais moderno) -->
+                <svg class="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12.24 10.27v2.44h6.81a6.05 6.05 0 0 1-2.61 3.96l2.13 1.66A9.95 9.95 0 0 0 22 12c0-2.37-.62-4.57-1.7-6.43l-2.16 1.69a6.05 6.05 0 0 1 2.87 4.77z" fill="#4285F4"/>
+                    <path d="M3 12c0 2.37.62 4.57 1.7 6.43l2.16-1.69a6.05 6.05 0 0 1-2.87-4.77H3z" fill="#34A853"/>
+                    <path d="M10 21.92a9.95 9.95 0 0 0 7.82-3.8l-2.13-1.66a6.05 6.05 0 0 1-7.82 1.48L10 21.92z" fill="#FBBC04"/>
+                    <path d="M12 4.08a9.95 9.95 0 0 0-7.82 3.8l2.13 1.66a6.05 6.05 0 0 1 7.82-1.48L12 4.08z" fill="#EA4335"/>
+                </svg>
+                Entrar com Google
+            </button>
+        </section>
+
+        <!-- #################### TELA HOME #################### -->
+        <section id="homePage" class="page-section">
+            <div class="flex items-center justify-between mb-6 pb-4 border-b border-gray-200">
+                <h1 class="text-3xl font-bold text-gray-800">Home</h1>
+                <div class="flex items-center space-x-2">
+                    <div id="userInfoHeader" class="flex items-center hidden">
+                        <img id="userPhotoHeader" src="" alt="Foto" class="w-8 h-8 rounded-full mr-2">
+                        <span id="userNameHeader" class="text-gray-700 font-medium hidden sm:block"></span>
+                    </div>
+                    <button id="signOutBtn"
+                            class="bg-red-500 text-white text-sm py-2 px-4 rounded-lg hover:bg-red-600 transition duration-300">
+                        Sair
+                    </button>
+                </div>
+            </div>
+
+            <!-- Filtro de Mês/Ano Aprimorado -->
+            <div class="flex flex-col sm:flex-row justify-between items-center mb-6 space-y-2 sm:space-y-0 sm:space-x-2">
+                <div class="flex items-center space-x-2 w-full sm:w-auto">
+                    <button id="prevMonthBtn" class="p-2 rounded-full hover:bg-gray-200 transition duration-200">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-left"><path d="m15 18-6-6 6-6"/></svg>
+                    </button>
+                    <select id="selectMonth" class="p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 w-full sm:w-auto"></select>
+                    <select id="selectYear" class="p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 w-full sm:w-auto"></select>
+                    <button id="nextMonthBtn" class="p-2 rounded-full hover:bg-gray-200 transition duration-300">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-right"><path d="m9 18 6-6-6-6"/></svg>
+                    </button>
+                </div>
+                <!-- Botão de Exportar CSV (agora ícone e discreto) -->
+                <button id="exportarCsvBtn" title="Exportar Contas" class="bg-gray-200 text-gray-700 p-2 rounded-full hover:bg-gray-300 transition duration-300 shadow-sm flex items-center justify-center text-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-download"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+                </button>
+            </div>
+
+            <!-- Resumo Financeiro -->
+            <div id="resumoFinanceiro" class="bg-gray-50 p-4 rounded-lg mb-6 shadow-sm">
+                <div class="flex justify-between items-center mb-2">
+                    <span class="text-gray-700 font-medium">Total a Pagar:</span>
+                    <span id="totalAPagarSpan" class="text-red-600 font-bold">R$ 0,00</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-gray-700 font-medium">Total Pago:</span>
+                    <span id="totalPagoSpan" class="text-green-600 font-bold">R$ 0,00</span>
+                </div>
+            </div>
+
+            <!-- Opções de Ordenação -->
+            <div class="flex flex-col sm:flex-row justify-between items-center mb-4 space-y-2 sm:space-y-0 sm:space-x-2">
+                <div class="w-full sm:w-1/2">
+                    <label for="ordenarContasSelect" class="block text-sm font-medium text-gray-700 mb-1">Ordenar por:</label>
+                    <div class="flex space-x-2">
+                        <select id="ordenarContasSelect" class="w-2/3 p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800">
+                            <option value="dataVencimentoExibicao">Data Vencimento</option>
+                            <option value="nome">Nome</option>
+                            <option value="valor">Valor</option>
+                            <option value="categoria">Categoria</option>
+                        </select>
+                        <select id="ordenarDirecaoSelect" class="w-1/3 p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800">
+                            <option value="asc">Cresc.</option>
+                            <option value="desc">Decresc.</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="w-full sm:w-1/2">
+                    <!-- Espaço para alinhar com o outro lado, se necessário -->
+                </div>
+            </div>
+
+            <!-- Filtros Adicionais -->
+            <div class="flex flex-col sm:flex-row justify-between items-center mb-4 space-y-2 sm:space-y-0 sm:space-x-2">
+                <div class="w-full sm:w-1/2">
+                    <label for="filtrarCategoriaSelect" class="block text-sm font-medium text-gray-700 mb-1">Filtrar por Categoria:</label>
+                    <select id="filtrarCategoriaSelect" class="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800">
+                        <option value="">Todas as Categorias</option>
+                        <!-- Categorias serão carregadas aqui pelo JS -->
+                    </select>
+                </div>
+                <div class="w-full sm:w-1/2">
+                    <label for="filtrarNomeInput" class="block text-sm font-medium text-gray-700 mb-1">Filtrar por Nome:</label>
+                    <input type="text" id="filtrarNomeInput" placeholder="Buscar por nome..."
+                           class="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+            </div>
+
+            <ul id="listaContas" class="space-y-3">
+                <li class="bg-gray-50 p-4 rounded-lg text-gray-600 text-center">Nenhuma conta adicionada para este mês.</li>
+            </ul>
+
+            <!-- Botão FAB para adicionar -->
+            <button id="fabAddBtn" class="fab-button bg-blue-600 text-white hover:bg-blue-700 transition duration-300">
+                +
+            </button>
+
+            <!-- Modal para escolha de Adicionar Conta ou Categoria (inicialmente oculto) -->
+            <div id="fabModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-40 hidden">
+                <div class="bg-white p-6 rounded-lg shadow-xl w-64">
+                    <h3 class="text-lg font-bold mb-4">O que deseja adicionar?</h3>
+                    <button id="goToAddAccountBtn" class="w-full bg-blue-500 text-white py-2 px-4 rounded-lg mb-2 hover:bg-blue-600">
+                        Nova Conta
+                    </button>
+                    <button id="goToAddCategoryBtn" class="w-full bg-green-500 text-white py-2 px-4 rounded-lg mb-4 hover:bg-green-600">
+                        Nova Categoria
+                    </button>
+                    <button id="closeFabModalBtn" class="w-full bg-gray-300 text-gray-800 py-2 px-4 rounded-lg hover:bg-gray-400">
+                        Cancelar
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- #################### TELA ADICIONAR CONTA #################### -->
+        <section id="addAccountPage" class="page-section">
+            <button id="backToHomeBtnAccount" class="text-gray-600 hover:text-gray-800 mb-4 flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-left mr-1"><path d="m15 18-6-6 6-6"/></svg>
+                Voltar
+            </button>
+            <h1 class="text-3xl font-bold text-gray-800 mb-6 text-center">Adicionar Nova Conta</h1>
+            
+            <input type="text" id="novaContaInput" placeholder="Nome da conta (ex: Aluguel)"
+                   class="w-full p-3 mb-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+            
+            <div class="flex mb-3 space-x-2">
+                <input type="number" step="0.01" id="valorContaInput" placeholder="Valor (R$)"
+                       class="w-1/2 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <input type="date" id="dataVencimentoInput"
+                       class="w-1/2 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-500">
+            </div>
+
+            <select id="periodicidadeSelect"
+                    class="w-full p-3 mb-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-500">
+                <option value="">Periodicidade</option>
+                <option value="mensal">Mensal</option>
+                <option value="semanal">Semanal</option>
+                <option value="anual">Anual</option>
+                <option value="unica">Única</option>
+            </select>
+
+            <h3 class="text-md font-medium text-blue-700 mb-2">Categoria</h3>
+            <div class="mb-3">
+                <select id="categoriaContaSelect"
+                        class="w-full p-3 mb-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-500">
+                    <option value="">Selecione uma Categoria</option>
+                    <!-- Categorias serão carregadas aqui pelo JS -->
+                </select>
+                <button id="goToAddCategoryFromAccountBtn" class="w-full text-blue-600 hover:underline text-sm text-left mt-1">
+                    + Criar nova categoria
+                </button>
+            </div>
+            
+            <button id="adicionarContaBtn"
+                    class="w-full bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700 transition duration-300 shadow-md">
+                Adicionar Conta
+            </button>
+        </section>
+
+        <!-- #################### TELA ADICIONAR CATEGORIA #################### -->
+        <section id="addCategoryPage" class="page-section">
+            <button id="backToHomeBtnCategory" class="text-gray-600 hover:text-gray-800 mb-4 flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-left mr-1"><path d="m15 18-6-6 6-6"/></svg>
+                Voltar
+            </button>
+            <h1 class="text-3xl font-bold text-gray-800 mb-6 text-center">Adicionar Nova Categoria</h1>
+            
+            <input type="text" id="novaCategoriaInput" placeholder="Nome da nova categoria"
+                   class="w-full p-3 mb-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
+            <button id="adicionarCategoriaBtn"
+                    class="w-full bg-green-600 text-white font-bold py-3 rounded-lg hover:bg-green-700 transition duration-300 shadow-md">
+                Criar Categoria
+            </button>
+
+            <h2 class="text-lg font-semibold text-gray-700 mt-8 mb-3">Minhas Categorias Existentes</h2>
+            <ul id="listaCategoriasExistentes" class="space-y-2">
+                <!-- As categorias serão carregadas aqui pelo JavaScript -->
+                <li class="bg-gray-50 p-3 rounded-lg text-gray-600 text-center">Nenhuma categoria adicionada.</li>
+            </ul>
+        </section>
+
+    </div>
+
+    <!-- #################### MODAL DE EDIÇÃO DE CONTA #################### -->
+    <div id="editAccountModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-6000 hidden">
+        <div class="bg-white p-6 rounded-xl shadow-xl w-full max-w-md mx-4">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center">Editar Conta</h2>
+            
+            <input type="text" id="editNovaContaInput" placeholder="Nome da conta"
+                   class="w-full p-3 mb-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+            
+            <div class="flex mb-3 space-x-2">
+                <input type="number" step="0.01" id="editValorContaInput" placeholder="Valor (R$)"
+                       class="w-1/2 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <input type="date" id="editDataVencimentoInput"
+                       class="w-1/2 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-500">
+            </div>
+
+            <select id="editPeriodicidadeSelect"
+                    class="w-full p-3 mb-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-500">
+                <option value="">Periodicidade</option>
+                <option value="mensal">Mensal</option>
+                <option value="semanal">Semanal</option>
+                <option value="anual">Anual</option>
+                <option value="unica">Única</option>
+            </select>
+
+            <h3 class="text-md font-medium text-blue-700 mb-2">Categoria</h3>
+            <div class="mb-3">
+                <select id="editCategoriaContaSelect"
+                        class="w-full p-3 mb-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-500">
+                    <option value="">Selecione uma Categoria</option>
+                    <!-- Categorias serão carregadas aqui pelo JS -->
+                </select>
+            </div>
+            
+            <div class="flex justify-around space-x-4 mt-6">
+                <button id="salvarEdicaoContaBtn"
+                        class="w-1/2 bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700 transition duration-300 shadow-md">
+                    Salvar
+                </button>
+                <button id="cancelarEdicaoContaBtn"
+                        class="w-1/2 bg-gray-300 text-gray-800 font-bold py-3 rounded-lg hover:bg-gray-400 transition duration-300 shadow-md">
+                    Cancelar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- #################### MODAL DE EDIÇÃO DE CATEGORIA #################### -->
+    <div id="editCategoryModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-6000 hidden">
+        <div class="bg-white p-6 rounded-xl shadow-xl w-full max-w-sm mx-4">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center">Editar Categoria</h2>
+            
+            <input type="text" id="editNovaCategoriaInput" placeholder="Nome da categoria"
+                   class="w-full p-3 mb-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
+            
+            <div class="flex justify-around space-x-4 mt-6">
+                <button id="salvarEdicaoCategoriaBtn"
+                        class="w-1/2 bg-green-600 text-white font-bold py-3 rounded-lg hover:bg-green-700 transition duration-300 shadow-md">
+                    Salvar
+                </button>
+                <button id="cancelarEdicaoCategoriaBtn"
+                        class="w-1/2 bg-gray-300 text-gray-800 font-bold py-3 rounded-lg hover:bg-gray-400 transition duration-300 shadow-md">
+                    Cancelar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- #################### MODAL DE ESCOLHA DE EXPORTAÇÃO #################### -->
+    <div id="exportScopeModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-6000 hidden">
+        <div class="bg-white p-6 rounded-lg shadow-xl w-64">
+            <h3 class="text-lg font-bold mb-4 text-center">Exportar Contas</h3>
+            <p class="text-gray-700 mb-4 text-center">O que deseja exportar?</p>
+            <button id="exportVisibleBtn" class="w-full bg-blue-500 text-white py-2 px-4 rounded-lg mb-2 hover:bg-blue-600">
+                Contas Visíveis
+            </button>
+            <button id="exportAllBtn" class="w-full bg-indigo-500 text-white py-2 px-4 rounded-lg mb-4 hover:bg-indigo-600">
+                Todo o Histórico
+            </button>
+            <button id="closeExportScopeModalBtn" class="w-full bg-gray-300 text-gray-800 py-2 px-4 rounded-lg hover:bg-gray-400">
+                Cancelar
+            </button>
+        </div>
+    </div>
+
+
+    <!-- Inclui os SDKs do Firebase -->
+    <script type="module">
+        // Importa os módulos necessários do Firebase
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, onSnapshot, updateDoc, deleteDoc, doc, query, where, orderBy, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // VAI AQUI SEU CÓDIGO firebaseConfig REAL! SUBSTITUA ESTE BLOCO ABAIXO.
+        const firebaseConfig = {
+            apiKey: "AIzaSyBqTtAkHKAeFhYRFLeIRGU_X0nH2_4Xn90",
+            authDomain: "bill-management13.firebaseapp.com",
+            projectId: "bill-management13",
+            storageBucket: "bill-management13.firebasestorage.app",
+            messagingSenderId: "450207477897",
+            appId: "1:450207477897:web:da67957b579b7b0e1e1658",
+            measurementId: "G-MGLNZ8JZ1J"
+        };
+        // FIM DO BLOCO A SER SUBSTITUÍDO
+
+        // Inicializa o Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+        const provider = new GoogleAuthProvider(); // Provedor de autenticação Google
+
+        // Referência para a coleção de contas no Firestore
+        const contasCollectionRef = collection(db, "contasFixas");
+        // Referência para a coleção de categorias PERSONALIZADAS (será por usuário)
+        let categoriasPersonalizadasCollectionRef; // Será inicializada após o login
+
+        // Variáveis para armazenar as funções de desinscrição dos listeners do Firestore
+        let unsubscribeContas = null;
+        let unsubscribeCategorias = null;
+
+        // Categorias Padrão (diretamente no código)
+        const defaultCategories = [
+            'Moradia', 'Transporte', 'Alimentação', 'Contas (Água, Luz, Internet)',
+            'Saúde', 'Educação', 'Lazer', 'Investimentos', 'Outros'
+        ];
+
+        // Elementos da UI
+        const pageSections = document.querySelectorAll('.page-section');
+        const loginPage = document.getElementById('loginPage');
+        const homePage = document.getElementById('homePage');
+        const addAccountPage = document.getElementById('addAccountPage');
+        const addCategoryPage = document.getElementById('addCategoryPage');
+
+        const novaContaInput = document.getElementById('novaContaInput');
+        const valorContaInput = document.getElementById('valorContaInput');
+        const dataVencimentoInput = document.getElementById('dataVencimentoInput'); // Novo input
+        const periodicidadeSelect = document.getElementById('periodicidadeSelect');
+        const categoriaContaSelect = document.getElementById('categoriaContaSelect');
+        const novaCategoriaInput = document.getElementById('novaCategoriaInput');
+        const adicionarCategoriaBtn = document.getElementById('adicionarCategoriaBtn');
+        const adicionarContaBtn = document.getElementById('adicionarContaBtn');
+        const listaContas = document.getElementById('listaContas');
+        const mensagemDiv = document.getElementById('mensagem');
+        const loadingIndicator = document.getElementById('loadingIndicator');
+        const signInGoogleBtn = document.getElementById('signInGoogleBtn');
+        const signOutBtn = document.getElementById('signOutBtn'); // No header
+        const userInfoDivHeader = document.getElementById('userInfoHeader'); // No header
+        const userNameHeaderSpan = document.getElementById('userNameHeader'); // No header
+        const userPhotoHeaderImg = document.getElementById('userPhotoHeader'); // No header
+
+        const fabAddBtn = document.getElementById('fabAddBtn');
+        const fabModal = document.getElementById('fabModal');
+        const goToAddAccountBtn = document.getElementById('goToAddAccountBtn');
+        const goToAddCategoryBtn = document.getElementById('goToAddCategoryBtn');
+        const closeFabModalBtn = document.getElementById('closeFabModalBtn');
+        const backToHomeBtnAccount = document.getElementById('backToHomeBtnAccount');
+        const backToHomeBtnCategory = document.getElementById('backToHomeBtnCategory');
+        const goToAddCategoryFromAccountBtn = document.getElementById('goToAddCategoryFromAccountBtn');
+        const listaCategoriasExistentes = document.getElementById('listaCategoriasExistentes');
+
+        // Home Page elements for Month/Year filter
+        const selectMonth = document.getElementById('selectMonth'); // Novo elemento
+        const selectYear = document.getElementById('selectYear');   // Novo elemento
+        const prevMonthBtn = document.getElementById('prevMonthBtn');
+        const nextMonthBtn = document.getElementById('nextMonthBtn');
+        const totalAPagarSpan = document.getElementById('totalAPagarSpan'); // Novo elemento
+        const totalPagoSpan = document.getElementById('totalPagoSpan');     // Novo elemento
+        const ordenarContasSelect = document.getElementById('ordenarContasSelect'); // Novo elemento
+        const ordenarDirecaoSelect = document.getElementById('ordenarDirecaoSelect'); // Novo elemento
+        const filtrarCategoriaSelect = document.getElementById('filtrarCategoriaSelect'); // Novo elemento
+        const filtrarNomeInput = document.getElementById('filtrarNomeInput'); // Novo elemento
+        const exportarCsvBtn = document.getElementById('exportarCsvBtn'); // Novo elemento
+
+        // Elementos do Modal de Edição de Conta
+        const editAccountModal = document.getElementById('editAccountModal');
+        const editNovaContaInput = document.getElementById('editNovaContaInput');
+        const editValorContaInput = document.getElementById('editValorContaInput');
+        const editDataVencimentoInput = document.getElementById('editDataVencimentoInput');
+        const editPeriodicidadeSelect = document.getElementById('editPeriodicidadeSelect');
+        const editCategoriaContaSelect = document.getElementById('editCategoriaContaSelect');
+        const salvarEdicaoContaBtn = document.getElementById('salvarEdicaoContaBtn');
+        const cancelarEdicaoContaBtn = document.getElementById('cancelarEdicaoContaBtn');
+        let currentEditingAccountId = null; // Para saber qual conta está sendo editada
+
+        // Elementos do Modal de Edição de Categoria
+        const editCategoryModal = document.getElementById('editCategoryModal');
+        const editNovaCategoriaInput = document.getElementById('editNovaCategoriaInput');
+        const salvarEdicaoCategoriaBtn = document.getElementById('salvarEdicaoCategoriaBtn');
+        const cancelarEdicaoCategoriaBtn = document.getElementById('cancelarEdicaoCategoriaBtn');
+        let currentEditingCategoryId = null; // Para saber qual categoria está sendo editada
+
+        // Elementos do Modal de Escolha de Exportação
+        const exportScopeModal = document.getElementById('exportScopeModal');
+        const exportVisibleBtn = document.getElementById('exportVisibleBtn');
+        const exportAllBtn = document.getElementById('exportAllBtn');
+        const closeExportScopeModalBtn = document.getElementById('closeExportScopeModalBtn');
+
+
+        let userId = null; // Variável para armazenar o ID do usuário
+        let currentMonth = new Date().getMonth(); // Mês atual do usuário
+        let currentYear = new Date().getFullYear(); // Ano atual do usuário
+        let currentSortOption = 'dataVencimentoExibicao'; // Opção de ordenação padrão
+        let currentSortDirection = 'asc'; // Direção de ordenação padrão
+        let currentFilterCategory = ''; // Filtro de categoria padrão (todas)
+        let currentFilterName = ''; // Filtro de nome padrão (vazio)
+
+        let displayedAccounts = []; // Variável global para armazenar as contas atualmente exibidas
+
+        // --- Funções de Utilitários ---
+        // Função para mostrar uma página específica
+        function showPage(pageId) {
+            pageSections.forEach(section => {
+                section.style.display = 'none';
+            });
+            document.getElementById(pageId).style.display = 'block';
+
+            // Esconde o FAB nas telas de formulário
+            if (pageId === 'homePage') {
+                fabAddBtn.classList.remove('hidden');
+            } else {
+                fabAddBtn.classList.add('hidden');
+            }
+            // Garante que o modal FAB esteja fechado ao mudar de página
+            fabModal.classList.add('hidden');
+            // Garante que os modais de edição estejam fechados
+            editAccountModal.classList.add('hidden');
+            editCategoryModal.classList.add('hidden');
+            exportScopeModal.classList.add('hidden'); // Garante que o modal de exportação esteja fechado
+        }
+
+        // Função para formatar valor em R$
+        const formatarValorEmReal = (valor) => {
+            if (typeof valor !== 'number' || isNaN(valor)) return 'R$ 0,00';
+            return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        };
+
+        let mensagemTimeout; // Para controlar o tempo da mensagem de feedback
+
+        // Função para exibir mensagens ao usuário (agora com fade out)
+        function exibirMensagem(texto, tipo = 'info') {
+            clearTimeout(mensagemTimeout); // Limpa qualquer timeout anterior
+
+            mensagemDiv.textContent = texto;
+            mensagemDiv.className = ''; // Reseta as classes
+            mensagemDiv.classList.add('absolute', 'top-4', 'left-1/2', '-translate-x-1/2', 'p-3', 'rounded-lg', 'text-center', 'font-medium', 'z-50', 'shadow-lg');
+            
+            if (tipo === 'erro') {
+                mensagemDiv.classList.add('bg-red-200', 'text-red-800');
+            } else if (tipo === 'sucesso') {
+                mensagemDiv.classList.add('bg-green-200', 'text-green-800');
+            } else { // info
+                mensagemDiv.classList.add('bg-blue-200', 'text-blue-800');
+            }
+            
+            mensagemDiv.classList.add('show'); // Adiciona a classe para mostrar (opacity 1)
+            
+            mensagemTimeout = setTimeout(() => {
+                mensagemDiv.classList.remove('show'); // Inicia o fade out
+                // Após a transição, esconde completamente para não bloquear cliques
+                setTimeout(() => {
+                    mensagemDiv.classList.add('hidden');
+                }, 500); // Duração da transição CSS
+            }, 3000); // Visível por 3 segundos
+        }
+
+        // --- Autenticação com Google ---
+        signInGoogleBtn.addEventListener('click', async () => {
+            try {
+                loadingIndicator.classList.remove('hidden');
+                await signInWithPopup(auth, provider);
+                // onAuthStateChanged lidará com o usuário logado
+            } catch (error) {
+                console.error("Erro no login com Google:", error);
+                if (error.code === 'auth/popup-closed-by-user') {
+                    exibirMensagem("Login cancelado pelo usuário.", "info");
+                } else {
+                    exibirMensagem("Erro ao fazer login com Google. Tente novamente.", "erro");
+                }
+            } finally {
+                loadingIndicator.classList.add('hidden');
+            }
+        });
+
+        // --- Logout ---
+        signOutBtn.addEventListener('click', async () => {
+            try {
+                loadingIndicator.classList.remove('hidden');
+                await signOut(auth);
+                exibirMensagem("Você foi desconectado.", "sucesso");
+            } catch (error) {
+                console.error("Erro ao fazer logout:", error);
+                exibirMensagem("Erro ao fazer logout. Tente novamente.", "erro");
+            } finally {
+                loadingIndicator.classList.add('hidden');
+            }
+        });
+
+        // --- Listener para o estado de autenticação (onAuthStateChanged) ---
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                userId = user.uid; // Define o ID do usuário logado
+                console.log("Usuário autenticado:", userId);
+
+                // Inicializa a coleção de categorias PERSONALIZADAS para este usuário
+                categoriasPersonalizadasCollectionRef = collection(db, `categorias/${userId}/minhasCategorias`);
+
+                // Atualiza info do usuário no header
+                userInfoDivHeader.classList.remove('hidden');
+                userNameHeaderSpan.textContent = user.displayName || 'Usuário';
+                if (user.photoURL) {
+                    userPhotoHeaderImg.src = user.photoURL;
+                    userPhotoHeaderImg.classList.remove('hidden');
+                } else {
+                    userPhotoHeaderImg.classList.add('hidden');
+                }
+
+                // Inicia os listeners do Firestore APENAS se não estiverem ativos
+                if (!unsubscribeCategorias) {
+                    unsubscribeCategorias = carregarCategorias(); // carregarCategorias agora retorna a função de desinscrição
+                }
+                if (!unsubscribeContas) {
+                    unsubscribeContas = carregarContas(); // carregarContas agora retorna a função de desinscrição
+                }
+                
+                showPage('homePage'); // Vai para a Home após o login
+
+            } else {
+                userId = null;
+                console.log("Nenhum usuário autenticado.");
+
+                // Desinscreve os listeners do Firestore quando o usuário faz logout
+                if (unsubscribeCategorias) {
+                    unsubscribeCategorias();
+                    unsubscribeCategorias = null;
+                }
+                if (unsubscribeContas) {
+                    unsubscribeContas();
+                    unsubscribeContas = null;
+                }
+
+                userInfoDivHeader.classList.add('hidden');
+                userNameHeaderSpan.textContent = '';
+                userPhotoHeaderImg.classList.add('hidden');
+                
+                // Limpa as categorias e as contas
+                categoriaContaSelect.innerHTML = '<option value="">Selecione uma Categoria</option>';
+                listaContas.innerHTML = '<li class="bg-gray-50 p-4 rounded-lg text-gray-600 text-center">Por favor, faça login para gerenciar suas contas.</li>';
+                showPage('loginPage'); // Vai para a tela de login
+            }
+        });
+
+        // --- Gerenciar Categorias Personalizadas ---
+        adicionarCategoriaBtn.addEventListener('click', async () => {
+            const nomeCategoria = novaCategoriaInput.value.trim();
+            if (nomeCategoria === '') {
+                exibirMensagem("Por favor, digite o nome da nova categoria.", "info");
+                return;
+            }
+            if (!userId) {
+                exibirMensagem("Você precisa estar logado para adicionar categorias.", "erro");
+                return;
+            }
+
+            // Verifica se a categoria já existe nas padrão ou personalizadas
+            const categoriaExistente = Array.from(categoriaContaSelect.options).some(
+                option => option.value.toLowerCase() === nomeCategoria.toLowerCase()
+            );
+
+            if (categoriaExistente) {
+                exibirMensagem("Esta categoria já existe.", "info");
+                return;
+            }
+
+            try {
+                loadingIndicator.classList.remove('hidden');
+                await addDoc(categoriasPersonalizadasCollectionRef, {
+                    nome: nomeCategoria,
+                    createdAt: new Date(),
+                    userId: userId 
+                });
+                novaCategoriaInput.value = '';
+                exibirMensagem("Categoria adicionada com sucesso!", "sucesso");
+                showPage('homePage'); // Volta para a home após adicionar
+            } catch (e) {
+                console.error("Erro ao adicionar categoria: ", e);
+                exibirMensagem("Erro ao adicionar categoria. Tente novamente.", "erro");
+            } finally {
+                loadingIndicator.classList.add('hidden');
+            }
+        });
+
+        // --- Carregar Categorias (Padrão + Personalizadas) ---
+        function carregarCategorias() {
+            if (!userId || !categoriasPersonalizadasCollectionRef) {
+                return null; // Retorna null se não houver userId para evitar erro no unsubscribe
+            }
+
+            // onSnapshot retorna uma função de desinscrição
+            return onSnapshot(categoriasPersonalizadasCollectionRef, (snapshot) => {
+                // Limpa e adiciona opção padrão para o SELECT de adicionar/editar conta
+                categoriaContaSelect.innerHTML = '<option value="">Selecione uma Categoria</option>'; 
+                editCategoriaContaSelect.innerHTML = '<option value="">Selecione uma Categoria</option>';
+                filtrarCategoriaSelect.innerHTML = '<option value="">Todas as Categorias</option>'; // Novo: para o filtro
+                
+                // Adiciona as categorias padrão
+                defaultCategories.forEach(cat => {
+                    const option = document.createElement('option');
+                    option.value = cat;
+                    option.textContent = cat;
+                    categoriaContaSelect.appendChild(option);
+                    editCategoriaContaSelect.appendChild(option.cloneNode(true)); // Clona para o modal de edição
+                    filtrarCategoriaSelect.appendChild(option.cloneNode(true)); // Clona para o filtro
+                });
+
+                // Limpa a lista de categorias existentes na tela de categorias
+                listaCategoriasExistentes.innerHTML = ''; 
+                const personalizadas = [];
+
+                snapshot.forEach(doc => {
+                    const categoria = doc.data();
+                    if (!defaultCategories.includes(categoria.nome)) { // Evita duplicatas com padrão
+                        personalizadas.push({id: doc.id, ...categoria});
+                    }
+                });
+
+                personalizadas.sort((a,b) => a.nome.localeCompare(b.nome)); // Ordena alfabeticamente
+
+                personalizadas.forEach(cat => {
+                    // Adiciona ao select de categorias
+                    const option = document.createElement('option');
+                    option.value = cat.nome;
+                    option.textContent = cat.nome;
+                    categoriaContaSelect.appendChild(option);
+                    editCategoriaContaSelect.appendChild(option.cloneNode(true)); // Clona para o modal de edição
+                    filtrarCategoriaSelect.appendChild(option.cloneNode(true)); // Clona para o filtro
+
+                    // Adiciona à lista de categorias existentes na tela de categorias
+                    const li = document.createElement('li');
+                    li.className = 'flex items-center justify-between bg-white p-3 rounded-lg shadow-sm';
+                    li.innerHTML = `
+                        <span class="text-gray-700">${cat.nome}</span>
+                        <div class="flex items-center space-x-2">
+                            <button data-id="${cat.id}" data-nome="${cat.nome}" class="editar-categoria-btn text-blue-500 hover:text-blue-700 p-1 rounded-full hover:bg-blue-50 transition duration-300">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-pencil"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
+                            </button>
+                            <button data-id="${cat.id}" class="excluir-categoria-btn text-red-500 hover:text-red-700 p-1 rounded-full hover:bg-red-50 transition duration-300">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trash-2">
+                                    <path d="M3 6h18"/>
+                                    <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/>
+                                    <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+                                    <line x1="10" x2="10" y1="11" y2="17"/>
+                                    <line x1="14" x2="14" y1="11" y2="17"/>
+                                </svg>
+                            </button>
+                        </div>
+                    `;
+                    listaCategoriasExistentes.appendChild(li);
+
+                    // Evento para editar categoria personalizada
+                    li.querySelector('.editar-categoria-btn').addEventListener('click', (e) => {
+                        const id = e.currentTarget.dataset.id;
+                        const nome = e.currentTarget.dataset.nome;
+                        openEditCategoryModal({ id, nome });
+                    });
+
+                    // Evento para excluir categoria personalizada
+                    li.querySelector('.excluir-categoria-btn').addEventListener('click', async (e) => {
+                        const idParaExcluir = e.currentTarget.dataset.id;
+                        if (!idParaExcluir) {
+                            console.error("ID da categoria para exclusão é nulo ou indefinido.");
+                            exibirMensagem("Erro: ID da categoria não encontrado para exclusão.", "erro");
+                            return;
+                        }
+                        const confirmacao = await showConfirmationModal('Tem certeza que deseja excluir esta categoria? Contas associadas não serão removidas.');
+                        if (!confirmacao) return;
+
+                        const docRef = doc(db, `categorias/${userId}/minhasCategorias`, idParaExcluir);
+                        try {
+                            loadingIndicator.classList.remove('hidden');
+                            await deleteDoc(docRef);
+                            exibirMensagem("Categoria excluída com sucesso!", "sucesso");
+                        } catch (error) {
+                            console.error("Erro ao excluir categoria: ", error);
+                            exibirMensagem("Erro ao excluir categoria. Tente novamente.", "erro");
+                        } finally {
+                            loadingIndicator.classList.add('hidden');
+                        }
+                    });
+                });
+
+                if (listaCategoriasExistentes.children.length === 0) {
+                     listaCategoriasExistentes.innerHTML = '<li class="bg-gray-50 p-3 rounded-lg text-gray-600 text-center">Nenhuma categoria personalizada adicionada ainda.</li>';
+                }
+
+            }, (error) => {
+                console.error("Erro ao carregar categorias personalizadas:", error);
+                exibirMensagem("Erro ao carregar categorias personalizadas.", "erro");
+            });
+        }
+
+
+        // --- Adicionar Nova Conta ---
+        adicionarContaBtn.addEventListener('click', async () => {
+            const nomeConta = novaContaInput.value.trim();
+            const valorConta = parseFloat(valorContaInput.value);
+            const dataVencimento = dataVencimentoInput.value; // Formato YYYY-MM-DD
+            const periodicidadeSelecionada = periodicidadeSelect.value;
+            const categoriaSelecionada = categoriaContaSelect.value;
+
+            if (nomeConta === '') {
+                exibirMensagem("Por favor, digite o nome da conta.", "info");
+                return;
+            }
+            if (isNaN(valorConta) || valorConta <= 0) {
+                exibirMensagem("Por favor, insira um valor válido para a conta.", "info");
+                return;
+            }
+            if (dataVencimento === '') {
+                exibirMensagem("Por favor, selecione a data de vencimento.", "info");
+                return;
+            }
+            if (periodicidadeSelecionada === '') {
+                exibirMensagem("Por favor, selecione a periodicidade da conta.", "info");
+                return;
+            }
+            if (categoriaSelecionada === '') {
+                exibirMensagem("Por favor, selecione uma categoria.", "info");
+                return;
+            }
+            if (!userId) {
+                exibirMensagem("Você precisa estar logado para adicionar contas.", "erro");
+                return;
+            }
+
+            try {
+                loadingIndicator.classList.remove('hidden');
+                await addDoc(contasCollectionRef, {
+                    nome: nomeConta,
+                    valor: valorConta,
+                    dataVencimento: dataVencimento, // Salva como string YYYY-MM-DD
+                    periodicidade: periodicidadeSelecionada,
+                    categoria: categoriaSelecionada,
+                    paga: {}, // Objeto para controlar o pagamento por 'YYYY-MM-DD'
+                    createdAt: new Date(),
+                    userId: userId
+                });
+                // Limpa os inputs
+                novaContaInput.value = '';
+                valorContaInput.value = '';
+                dataVencimentoInput.value = '';
+                periodicidadeSelect.value = '';
+                categoriaContaSelect.value = '';
+                exibirMensagem("Conta adicionada com sucesso!", "sucesso");
+                showPage('homePage'); // Volta para a Home após adicionar
+            } catch (e) {
+                console.error("Erro ao adicionar documento: ", e);
+                exibirMensagem("Erro ao adicionar conta. Tente novamente.", "erro");
+            } finally {
+                loadingIndicator.classList.add('hidden');
+            }
+        });
+
+        // --- Carregar e Atualizar Contas em Tempo Real (Home Page) ---
+        function carregarContas() {
+            if (!userId) { // Adicionado verificação de userId
+                listaContas.innerHTML = '<li class="bg-gray-50 p-4 rounded-lg text-gray-600 text-center">Por favor, faça login para gerenciar suas contas.</li>';
+                return null; // Retorna null se não houver userId para evitar erro no unsubscribe
+            }
+
+            loadingIndicator.classList.remove('hidden');
+            // A query filtra as contas pelo userId e ordena pela data de criação
+            const userContasQuery = query(contasCollectionRef, where("userId", "==", userId), orderBy("createdAt", "asc"));
+
+            // onSnapshot retorna uma função de desinscrição
+            return onSnapshot(userContasQuery, (snapshot) => {
+                // Aqui vamos gerar as contas para o mês/ano atual ou selecionado
+                renderizarContasDoMes(snapshot.docs); // Passa todos os documentos
+                loadingIndicator.classList.add('hidden');
+            }, (error) => {
+                console.error("Erro ao carregar contas:", error);
+                exibirMensagem("Erro ao carregar contas. Verifique sua conexão.", "erro");
+                loadingIndicator.classList.add('hidden');
+            });
+        }
+
+        // --- Renderiza as contas para o mês/ano selecionado ---
+        function renderizarContasDoMes(docs) {
+            listaContas.innerHTML = ''; // Limpa a lista existente
+            const mesAtual = currentMonth; // Mês 0-11
+            const anoAtual = currentYear;
+            
+            // Atualiza os selects de mês e ano
+            selectMonth.value = mesAtual;
+            selectYear.value = anoAtual;
+
+
+            const contasParaExibir = [];
+            const hoje = new Date(); 
+
+            docs.forEach(docSnapshot => {
+                const conta = { id: docSnapshot.id, ...docSnapshot.data() };
+                const dataVencimentoOriginalStr = conta.dataVencimento; // YYYY-MM-DD
+                const dataVencimentoOriginal = new Date(dataVencimentoOriginalStr + 'T12:00:00'); // Garante fuso horário
+                const diaVencimentoOriginal = dataVencimentoOriginal.getDate();
+                const mesVencimentoOriginal = dataVencimentoOriginal.getMonth();
+                const anoVencimentoOriginal = dataVencimentoOriginal.getFullYear();
+
+                // Lógica para contas únicas e recorrentes
+                if (conta.periodicidade === 'unica') {
+                    if (mesVencimentoOriginal === mesAtual && anoVencimentoOriginal === anoAtual) {
+                        const dataPagamentoId = `${anoAtual}-${String(mesAtual + 1).padStart(2, '0')}-${String(diaVencimentoOriginal).padStart(2, '0')}`;
+                        contasParaExibir.push({
+                            ...conta,
+                            // Verifica se o mês/ano específico foi pago. Trata o caso de `conta.paga` ser booleano.
+                            paga: (typeof conta.paga === 'object' && conta.paga !== null && conta.paga[dataPagamentoId]) || (typeof conta.paga === 'boolean' && conta.paga) || false,
+                            dataVencimentoExibicao: new Date(anoAtual, mesAtual, diaVencimentoOriginal),
+                            dataPagamentoId: dataPagamentoId // ID para controle de pagamento
+                        });
+                    }
+                } else if (conta.periodicidade === 'mensal') {
+                    // Contas mensais são exibidas se a data de criação for anterior ou igual ao mês/ano atual
+                    const dataCriacao = conta.createdAt ? conta.createdAt.toDate() : new Date(0);
+                    const dataDeExibicao = new Date(anoAtual, mesAtual, diaVencimentoOriginal);
+                    
+                    if (dataDeExibicao >= dataCriacao && anoAtual >= anoVencimentoOriginal) { // Verifica se a conta já "existia" nesta data
+                        const dataPagamentoId = `${anoAtual}-${String(mesAtual + 1).padStart(2, '0')}-${String(diaVencimentoOriginal).padStart(2, '0')}`;
+                        contasParaExibir.push({
+                            ...conta,
+                            paga: (typeof conta.paga === 'object' && conta.paga !== null && conta.paga[dataPagamentoId]) || (typeof conta.paga === 'boolean' && conta.paga) || false,
+                            dataVencimentoExibicao: dataDeExibicao,
+                            dataPagamentoId: dataPagamentoId
+                        });
+                    }
+                } else if (conta.periodicidade === 'anual') {
+                    // Exibir apenas no mês e dia do vencimento original no ano atual ou futuro
+                    if (mesAtual === mesVencimentoOriginal && anoAtual >= anoVencimentoOriginal) {
+                         const dataPagamentoId = `${anoAtual}-${String(mesAtual + 1).padStart(2, '0')}-${String(diaVencimentoOriginal).padStart(2, '0')}`;
+                         contasParaExibir.push({
+                            ...conta,
+                            paga: (typeof conta.paga === 'object' && conta.paga !== null && conta.paga[dataPagamentoId]) || (typeof conta.paga === 'boolean' && conta.paga) || false,
+                            dataVencimentoExibicao: new Date(anoAtual, mesAtual, diaVencimentoOriginal),
+                            dataPagamentoId: dataPagamentoId
+                        });
+                    }
+                } else if (conta.periodicidade === 'semanal') {
+                    // Para semanal, vamos gerar uma entrada para cada dia da semana que cai no mês atual,
+                    // a partir da data de vencimento original.
+                    const dataReferencia = new Date(anoAtual, mesAtual, 1); // Começa no primeiro dia do mês atual
+                    const dataFinalDoMes = new Date(anoAtual, mesAtual + 1, 0); // Último dia do mês atual
+
+                    // Verifica qual é o dia da semana da data de vencimento original (0=domingo, 6=sábado)
+                    const diaDaSemanaAlvo = dataVencimentoOriginal.getDay();
+
+                    // Itera por todos os dias do mês atual
+                    for (let d = new Date(dataReferencia); d <= dataFinalDoMes; d.setDate(d.getDate() + 1)) {
+                        // Se o dia da semana coincide e a data é igual ou posterior à data de vencimento original
+                        if (d.getDay() === diaDaSemanaAlvo && d >= dataVencimentoOriginal) {
+                            const dataPagamentoId = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                             contasParaExibir.push({
+                                ...conta,
+                                paga: (typeof conta.paga === 'object' && conta.paga !== null && conta.paga[dataPagamentoId]) || (typeof conta.paga === 'boolean' && conta.paga) || false,
+                                dataVencimentoExibicao: new Date(d),
+                                dataPagamentoId: dataPagamentoId
+                            });
+                        }
+                    }
+                }
+            });
+
+            // --- Aplica os filtros ---
+            let contasFiltradas = contasParaExibir.filter(conta => {
+                const matchesCategory = currentFilterCategory === '' || conta.categoria === currentFilterCategory;
+                const matchesName = currentFilterName === '' || conta.nome.toLowerCase().includes(currentFilterName.toLowerCase());
+                return matchesCategory && matchesName;
+            });
+
+
+            // --- Aplica a ordenação ---
+            contasFiltradas.sort((a, b) => {
+                let compare = 0;
+                if (currentSortOption === 'nome') {
+                    compare = a.nome.localeCompare(b.nome);
+                } else if (currentSortOption === 'valor') {
+                    compare = a.valor - b.valor;
+                } else if (currentSortOption === 'categoria') {
+                    compare = a.categoria.localeCompare(b.categoria);
+                } else { // 'dataVencimentoExibicao' (padrão)
+                    compare = a.dataVencimentoExibicao.getTime() - b.dataVencimentoExibicao.getTime();
+                }
+
+                return currentSortDirection === 'asc' ? compare : -compare;
+            });
+
+            // Armazena as contas filtradas e ordenadas globalmente para exportação
+            displayedAccounts = contasFiltradas;
+
+
+            let totalAPagar = 0;
+            let totalPago = 0;
+
+            if (contasFiltradas.length === 0) {
+                listaContas.innerHTML = `<li class="bg-gray-50 p-4 rounded-lg text-gray-600 text-center">Nenhuma conta agendada para ${nomeMes} com os filtros atuais.</li>`;
+            } else {
+                contasFiltradas.forEach(conta => {
+                    const li = document.createElement('li');
+                    const isPaidForThisPeriod = conta.paga; 
+
+                    // Calcula os totais
+                    totalAPagar += conta.valor;
+                    if (isPaidForThisPeriod) {
+                        totalPago += conta.valor;
+                    }
+
+                    li.className = `flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 rounded-lg transition duration-200 ${isPaidForThisPeriod ? 'bg-green-100' : 'bg-white shadow-sm'}`;
+                    li.innerHTML = `
+                        <div class="flex items-center mb-2 sm:mb-0 w-full sm:w-auto">
+                            <input type="checkbox" id="check-${conta.id}-${conta.dataPagamentoId}" ${isPaidForThisPeriod ? 'checked' : ''}
+                                class="form-checkbox h-5 w-5 text-blue-600 rounded focus:ring-blue-500 cursor-pointer">
+                            <label for="check-${conta.id}-${conta.dataPagamentoId}" class="ml-3 text-lg ${isPaidForThisPeriod ? 'line-through text-gray-500' : 'text-gray-800'} cursor-pointer">
+                                ${conta.nome}
+                            </label>
+                        </div>
+                        <div class="flex flex-col sm:flex-row sm:items-center text-sm text-gray-500 w-full sm:w-auto mt-2 sm:mt-0">
+                            <span class="sm:mr-3 mb-1 sm:mb-0 text-gray-700"><strong>${formatarValorEmReal(conta.valor)}</strong></span>
+                            <span class="sm:mr-3 mb-1 sm:mb-0 text-gray-600">(${conta.categoria})</span>
+                            <span class="capitalize sm:mr-3 mb-1 sm:mb-0 text-gray-600">${conta.periodicidade} - ${conta.dataVencimentoExibicao.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}</span>
+                            <div class="flex items-center space-x-2 mt-2 sm:mt-0">
+                                <button data-id="${conta.id}" data-nome="${conta.nome}" data-valor="${conta.valor}" data-data-vencimento="${conta.dataVencimento}" data-periodicidade="${conta.periodicidade}" data-categoria="${conta.categoria}" class="editar-conta-btn text-blue-500 hover:text-blue-700 p-1 rounded-full hover:bg-blue-50 transition duration-300">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-pencil"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
+                                </button>
+                                <button data-id="${conta.id}" data-datapagamento="${conta.dataPagamentoId}" class="excluir-btn text-red-500 hover:text-red-700 p-1 rounded-full hover:bg-red-50 transition duration-300">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trash-2">
+                                        <path d="M3 6h18"/>
+                                        <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/>
+                                        <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+                                        <line x1="10" x2="10" y1="11" y2="17"/>
+                                        <line x1="14" x2="14" y1="11" y2="17"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                    listaContas.appendChild(li);
+
+                    // Adicionar evento para marcar/desmarcar o pagamento do MÊS específico
+                    li.querySelector(`#check-${conta.id}-${conta.dataPagamentoId}`).addEventListener('change', async (e) => {
+                        const docRef = doc(db, "contasFixas", conta.id);
+                        const isChecked = e.target.checked;
+                        const dataPagamentoKey = conta.dataPagamentoId; // YYYY-MM-DD
+                        
+                        try {
+                            loadingIndicator.classList.remove('hidden');
+                            const updateData = {};
+                            // Firebase permite atualizar campos aninhados usando notação de ponto
+                            updateData[`paga.${dataPagamentoKey}`] = isChecked;
+                            await updateDoc(docRef, updateData);
+                            exibirMensagem(isChecked ? `Conta '${conta.nome}' marcada como paga para ${conta.dataVencimentoExibicao.toLocaleDateString('pt-BR')}!` : `Conta '${conta.nome}' desmarcada para ${conta.dataVencimentoExibicao.toLocaleDateString('pt-BR')}.`, "sucesso");
+                            
+                        } catch (error) {
+                            console.error("Erro ao atualizar status de pagamento: ", error);
+                            exibirMensagem("Erro ao atualizar pagamento. Tente novamente.", "erro");
+                        } finally {
+                            loadingIndicator.classList.add('hidden');
+                        }
+                    });
+
+                    // Evento para abrir modal de edição de conta
+                    li.querySelector('.editar-conta-btn').addEventListener('click', (e) => {
+                        const id = e.currentTarget.dataset.id;
+                        const nome = e.currentTarget.dataset.nome;
+                        const valor = parseFloat(e.currentTarget.dataset.valor);
+                        const dataVencimento = e.currentTarget.dataset.dataVencimento;
+                        const periodicidade = e.currentTarget.dataset.periodicidade;
+                        const categoria = e.currentTarget.dataset.categoria;
+                        openEditAccountModal({ id, nome, valor, dataVencimento, periodicidade, categoria });
+                    });
+
+
+                    // Adicionar evento para excluir a CONTA TEMPLATE (não apenas do mês)
+                    li.querySelector('.excluir-btn').addEventListener('click', async (e) => {
+                        const idParaExcluir = e.currentTarget.dataset.id;
+                        const confirmacao = await showConfirmationModal('Tem certeza que deseja EXCLUIR ESTA CONTA TEMPLATE e todos os seus registros de pagamento?');
+                        if (!confirmacao) return;
+
+                        const docRef = doc(db, "contasFixas", idParaExcluir);
+                        try {
+                            loadingIndicator.classList.remove('hidden');
+                            await deleteDoc(docRef);
+                            exibirMensagem("Conta excluída com sucesso!", "sucesso");
+                        } catch (error) {
+                            console.error("Erro ao excluir conta: ", error);
+                            exibirMensagem("Erro ao excluir conta. Tente novamente.", "erro");
+                        } finally {
+                            loadingIndicator.classList.add('hidden');
+                        }
+                    });
+                });
+            }
+            // Atualiza os spans de resumo financeiro
+            totalAPagarSpan.textContent = formatarValorEmReal(totalAPagar);
+            totalPagoSpan.textContent = formatarValorEmReal(totalPago);
+        }
+
+        // --- Funções de População de Selects de Mês/Ano ---
+        const meses = [
+            { value: 0, text: 'Janeiro' }, { value: 1, text: 'Fevereiro' },
+            { value: 2, text: 'Março' }, { value: 3, text: 'Abril' },
+            { value: 4, text: 'Maio' }, { value: 5, text: 'Junho' },
+            { value: 6, text: 'Julho' }, { value: 7, text: 'Agosto' },
+            { value: 8, text: 'Setembro' }, { value: 9, text: 'Outubro' },
+            { value: 10, text: 'Novembro' }, { value: 11, text: 'Dezembro' }
+        ];
+
+        function popularSelectsMesAno() {
+            // Popula o select de meses
+            selectMonth.innerHTML = '';
+            meses.forEach(mes => {
+                const option = document.createElement('option');
+                option.value = mes.value;
+                option.textContent = mes.text;
+                selectMonth.appendChild(option);
+            });
+
+            // Popula o select de anos (ex: 5 anos para trás e 5 para frente)
+            selectYear.innerHTML = '';
+            const anoAtual = new Date().getFullYear();
+            for (let i = anoAtual - 5; i <= anoAtual + 5; i++) {
+                const option = document.createElement('option');
+                option.value = i;
+                option.textContent = i;
+                selectYear.appendChild(option);
+            }
+
+            // Define os valores iniciais dos selects
+            selectMonth.value = currentMonth;
+            selectYear.value = currentYear;
+        }
+
+
+        // --- Navegação Mês/Ano ---
+        function atualizarFiltroMesAno() {
+            carregarContas(); // Recarrega as contas para o novo mês/ano
+        }
+
+        prevMonthBtn.addEventListener('click', () => {
+            currentMonth--;
+            if (currentMonth < 0) {
+                currentMonth = 11;
+                currentYear--;
+            }
+            selectMonth.value = currentMonth; // Atualiza o select
+            selectYear.value = currentYear;   // Atualiza o select
+            atualizarFiltroMesAno();
+        });
+
+        nextMonthBtn.addEventListener('click', () => {
+            currentMonth++;
+            if (currentMonth > 11) {
+                currentMonth = 0;
+                currentYear++;
+            }
+            selectMonth.value = currentMonth; // Atualiza o select
+            selectYear.value = currentYear;   // Atualiza o select
+            atualizarFiltroMesAno();
+        });
+
+        // Event listeners para os selects de mês e ano
+        selectMonth.addEventListener('change', () => {
+            currentMonth = parseInt(selectMonth.value);
+            atualizarFiltroMesAno();
+        });
+
+        selectYear.addEventListener('change', () => {
+            currentYear = parseInt(selectYear.value);
+            atualizarFiltroMesAno();
+        });
+
+        // Event listener para o select de ordenação
+        ordenarContasSelect.addEventListener('change', () => {
+            currentSortOption = ordenarContasSelect.value;
+            carregarContas(); // Recarrega as contas com a nova ordenação
+        });
+
+        // Event listener para o select de direção de ordenação
+        ordenarDirecaoSelect.addEventListener('change', () => {
+            currentSortDirection = ordenarDirecaoSelect.value;
+            carregarContas(); // Recarrega as contas com a nova direção de ordenação
+        });
+
+        // Event listener para o filtro de categoria
+        filtrarCategoriaSelect.addEventListener('change', () => {
+            currentFilterCategory = filtrarCategoriaSelect.value;
+            carregarContas(); // Recarrega as contas com o novo filtro
+        });
+
+        // Event listener para o filtro de nome (com pequeno delay para não recarregar a cada letra)
+        let filterNameTimeout;
+        filtrarNomeInput.addEventListener('keyup', () => {
+            clearTimeout(filterNameTimeout);
+            filterNameTimeout = setTimeout(() => {
+                currentFilterName = filtrarNomeInput.value.trim();
+                carregarContas(); // Recarrega as contas com o novo filtro
+            }, 300); // 300ms de delay
+        });
+
+        // Event listener para o botão de exportar CSV (agora abre o modal de escolha)
+        exportarCsvBtn.addEventListener('click', () => {
+            exportScopeModal.classList.remove('hidden');
+        });
+
+        // Event listeners para o modal de escolha de exportação
+        exportVisibleBtn.addEventListener('click', () => {
+            exportarContasParaCsv(displayedAccounts, `contas_visiveis_${currentYear}-${String(currentMonth + 1).padStart(2, '0')}.csv`);
+            exportScopeModal.classList.add('hidden');
+        });
+
+        exportAllBtn.addEventListener('click', async () => {
+            if (!userId) {
+                exibirMensagem("Você precisa estar logado para exportar todo o histórico.", "erro");
+                exportScopeModal.classList.add('hidden');
+                return;
+            }
+            loadingIndicator.classList.remove('hidden');
+            const allContasQuery = query(contasCollectionRef, where("userId", "==", userId));
+            const querySnapshot = await getDocs(allContasQuery);
+            const allAccounts = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+            // Processar 'paga' para cada instância de conta no histórico completo
+            const processedAllAccounts = [];
+            allAccounts.forEach(conta => {
+                const dataVencimentoOriginal = new Date(conta.dataVencimento + 'T12:00:00');
+                const diaVencimentoOriginal = dataVencimentoOriginal.getDate();
+                const mesVencimentoOriginal = dataVencimentoOriginal.getMonth();
+                const anoVencimentoOriginal = dataVencimentoOriginal.getFullYear();
+                const dataCriacao = conta.createdAt ? conta.createdAt.toDate() : new Date(0);
+
+                // Para cada conta, precisamos gerar todas as suas 'instâncias' de pagamento
+                // desde a data de criação até um futuro razoável (ex: ano atual + 1)
+                const limiteAno = new Date().getFullYear() + 1;
+
+                if (conta.periodicidade === 'unica') {
+                    const dataPagamentoId = `${anoVencimentoOriginal}-${String(mesVencimentoOriginal + 1).padStart(2, '0')}-${String(diaVencimentoOriginal).padStart(2, '0')}`;
+                    processedAllAccounts.push({
+                        ...conta,
+                        paga: (typeof conta.paga === 'object' && conta.paga !== null && conta.paga[dataPagamentoId]) || (typeof conta.paga === 'boolean' && conta.paga) || false,
+                        dataVencimentoExibicao: new Date(anoVencimentoOriginal, mesVencimentoOriginal, diaVencimentoOriginal),
+                        dataPagamentoId: dataPagamentoId
+                    });
+                } else if (conta.periodicidade === 'mensal') {
+                    for (let y = anoVencimentoOriginal; y <= limiteAno; y++) {
+                        for (let m = 0; m < 12; m++) {
+                            const dataDeExibicao = new Date(y, m, diaVencimentoOriginal);
+                            if (dataDeExibicao >= dataCriacao) {
+                                const dataPagamentoId = `${y}-${String(m + 1).padStart(2, '0')}-${String(diaVencimentoOriginal).padStart(2, '0')}`;
+                                processedAllAccounts.push({
+                                    ...conta,
+                                    paga: (typeof conta.paga === 'object' && conta.paga !== null && conta.paga[dataPagamentoId]) || (typeof conta.paga === 'boolean' && conta.paga) || false,
+                                    dataVencimentoExibicao: dataDeExibicao,
+                                    dataPagamentoId: dataPagamentoId
+                                });
+                            }
+                        }
+                    }
+                } else if (conta.periodicidade === 'anual') {
+                    for (let y = anoVencimentoOriginal; y <= limiteAno; y++) {
+                        const dataPagamentoId = `${y}-${String(mesVencimentoOriginal + 1).padStart(2, '0')}-${String(diaVencimentoOriginal).padStart(2, '0')}`;
+                        processedAllAccounts.push({
+                            ...conta,
+                            paga: (typeof conta.paga === 'object' && conta.paga !== null && conta.paga[dataPagamentoId]) || (typeof conta.paga === 'boolean' && conta.paga) || false,
+                            dataVencimentoExibicao: new Date(y, mesVencimentoOriginal, diaVencimentoOriginal),
+                            dataPagamentoId: dataPagamentoId
+                        });
+                    }
+                } else if (conta.periodicidade === 'semanal') {
+                    // Para semanal, gere instâncias para um período razoável (ex: 2 anos)
+                    const dataLimite = new Date(new Date().getFullYear() + 1, 11, 31); // Até o final do próximo ano
+                    for (let d = new Date(dataVencimentoOriginal); d <= dataLimite; d.setDate(d.getDate() + 1)) {
+                        if (d.getDay() === dataVencimentoOriginal.getDay() && d >= dataCriacao) { // Se o dia da semana coincide e após criação
+                            const dataPagamentoId = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                            processedAllAccounts.push({
+                                ...conta,
+                                paga: (typeof conta.paga === 'object' && conta.paga !== null && conta.paga[dataPagamentoId]) || (typeof conta.paga === 'boolean' && conta.paga) || false,
+                                dataVencimentoExibicao: new Date(d),
+                                dataPagamentoId: dataPagamentoId
+                            });
+                        }
+                    }
+                }
+            });
+
+            // Ordena o histórico completo por data de vencimento
+            processedAllAccounts.sort((a, b) => a.dataVencimentoExibicao.getTime() - b.dataVencimentoExibicao.getTime());
+
+            exportarContasParaCsv(processedAllAccounts, `historico_completo_contas.csv`);
+            loadingIndicator.classList.add('hidden');
+            exportScopeModal.classList.add('hidden');
+        });
+
+        closeExportScopeModalBtn.addEventListener('click', () => {
+            exportScopeModal.classList.add('hidden');
+        });
+
+
+        // --- Eventos de Navegação ---
+        fabAddBtn.addEventListener('click', () => {
+            fabModal.classList.remove('hidden');
+        });
+
+        closeFabModalBtn.addEventListener('click', () => {
+            fabModal.classList.add('hidden');
+        });
+
+        goToAddAccountBtn.addEventListener('click', () => {
+            // Limpa os campos do formulário antes de ir para a tela de adicionar conta
+            novaContaInput.value = '';
+            valorContaInput.value = '';
+            dataVencimentoInput.value = '';
+            periodicidadeSelect.value = '';
+            categoriaContaSelect.value = '';
+            showPage('addAccountPage');
+            fabModal.classList.add('addHidden');
+        });
+
+        goToAddCategoryBtn.addEventListener('click', () => {
+            novaCategoriaInput.value = ''; // Limpa o campo de nova categoria
+            showPage('addCategoryPage');
+            fabModal.classList.add('hidden');
+        });
+
+        backToHomeBtnAccount.addEventListener('click', () => {
+            showPage('homePage');
+        });
+
+        backToHomeBtnCategory.addEventListener('click', () => {
+            showPage('homePage');
+        });
+
+        goToAddCategoryFromAccountBtn.addEventListener('click', () => {
+            novaCategoriaInput.value = ''; // Limpa o campo de nova categoria
+            showPage('addCategoryPage');
+        });
+
+        // --- Modal de Confirmação customizado (substitui 'confirm()') ---
+        function showConfirmationModal(message) {
+            return new Promise((resolve) => {
+                const modalHtml = `
+                    <div id="customConfirmModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-6000">
+                        <div class="bg-white p-6 rounded-lg shadow-xl w-80">
+                            <p class="text-lg mb-6 text-center">${message}</p>
+                            <div class="flex justify-around">
+                                <button id="confirmYes" class="bg-red-500 text-white py-2 px-5 rounded-lg hover:bg-red-600 transition duration-300">Sim</button>
+                                <button id="confirmNo" class="bg-gray-300 text-gray-800 py-2 px-5 rounded-lg hover:bg-gray-400 transition duration-300">Não</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+                const modal = document.getElementById('customConfirmModal');
+                const confirmYesBtn = document.getElementById('confirmYes');
+                const confirmNoBtn = document.getElementById('confirmNo');
+
+                if (!modal || !confirmYesBtn || !confirmNoBtn) {
+                    console.error("Erro: Modal de confirmação ou botões não encontrados no DOM após inserção.");
+                    alert("Erro interno ao exibir confirmação. Por favor, tente novamente.");
+                    modal?.remove(); 
+                    resolve(false);
+                    return;
+                }
+                
+                console.log("Modal de confirmação inserido e botões encontrados.");
+
+                confirmYesBtn.onclick = () => {
+                    modal.remove();
+                    resolve(true);
+                };
+                confirmNoBtn.onclick = () => {
+                    modal.remove();
+                    resolve(false);
+                };
+            });
+        }
+
+        // --- Funções de Edição ---
+
+        // Abre o modal de edição de conta e preenche com os dados
+        function openEditAccountModal(conta) {
+            currentEditingAccountId = conta.id;
+            editNovaContaInput.value = conta.nome;
+            editValorContaInput.value = conta.valor;
+            editDataVencimentoInput.value = conta.dataVencimento;
+            editPeriodicidadeSelect.value = conta.periodicidade;
+            // Garante que o select de categoria tenha as opções antes de tentar selecionar
+            // Isso é tratado pela função carregarCategorias que é chamada no login
+            editCategoriaContaSelect.value = conta.categoria; 
+            editAccountModal.classList.remove('hidden');
+        }
+
+        // Salva as alterações da conta no Firestore
+        salvarEdicaoContaBtn.addEventListener('click', async () => {
+            if (!currentEditingAccountId || !userId) {
+                exibirMensagem("Erro: Nenhuma conta selecionada para edição ou usuário não logado.", "erro");
+                return;
+            }
+
+            const nome = editNovaContaInput.value.trim();
+            const valor = parseFloat(editValorContaInput.value);
+            const dataVencimento = editDataVencimentoInput.value;
+            const periodicidade = editPeriodicidadeSelect.value;
+            const categoria = editCategoriaContaSelect.value;
+
+            if (nome === '' || isNaN(valor) || valor <= 0 || dataVencimento === '' || periodicidade === '' || categoria === '') {
+                exibirMensagem("Por favor, preencha todos os campos da conta.", "info");
+                return;
+            }
+
+            try {
+                loadingIndicator.classList.remove('hidden');
+                const docRef = doc(db, "contasFixas", currentEditingAccountId);
+                await updateDoc(docRef, {
+                    nome,
+                    valor,
+                    dataVencimento,
+                    periodicidade,
+                    categoria
+                });
+                exibirMensagem("Conta atualizada com sucesso!", "sucesso");
+                editAccountModal.classList.add('hidden'); // Fecha o modal
+            } catch (error) {
+                console.error("Erro ao atualizar conta: ", error);
+                exibirMensagem("Erro ao atualizar conta. Tente novamente.", "erro");
+            } finally {
+                loadingIndicator.classList.add('hidden');
+            }
+        });
+
+        cancelarEdicaoContaBtn.addEventListener('click', () => {
+            editAccountModal.classList.add('hidden'); // Fecha o modal
+        });
+
+        // Abre o modal de edição de categoria e preenche com os dados
+        function openEditCategoryModal(categoria) {
+            currentEditingCategoryId = categoria.id;
+            editNovaCategoriaInput.value = categoria.nome;
+            editCategoryModal.classList.remove('hidden');
+        }
+
+        // Salva as alterações da categoria no Firestore
+        salvarEdicaoCategoriaBtn.addEventListener('click', async () => {
+            if (!currentEditingCategoryId || !userId) {
+                exibirMensagem("Erro: Nenhuma categoria selecionada para edição ou usuário não logado.", "erro");
+                return;
+            }
+
+            const nome = editNovaCategoriaInput.value.trim();
+            if (nome === '') {
+                exibirMensagem("Por favor, digite o nome da categoria.", "info");
+                return;
+            }
+
+            try {
+                loadingIndicator.classList.remove('hidden');
+                const docRef = doc(db, `categorias/${userId}/minhasCategorias`, currentEditingCategoryId);
+                await updateDoc(docRef, {
+                    nome
+                });
+                exibirMensagem("Categoria atualizada com sucesso!", "sucesso");
+                editCategoryModal.classList.add('hidden'); // Fecha o modal
+            } catch (error) {
+                console.error("Erro ao atualizar categoria: ", error);
+                exibirMensagem("Erro ao atualizar categoria. Tente novamente.", "erro");
+            } finally {
+                loadingIndicator.classList.add('hidden');
+            }
+        });
+
+        cancelarEdicaoCategoriaBtn.addEventListener('click', () => {
+            editCategoryModal.classList.add('hidden'); // Fecha o modal
+        });
+
+
+        // --- Inicialização ---
+        document.addEventListener('DOMContentLoaded', () => {
+            showPage('loginPage'); // Mostra a página de login por padrão
+            popularSelectsMesAno(); // Popula os selects de mês e ano
+            // currentMonth e currentYear já são inicializados com a data atual do usuário
+            atualizarFiltroMesAno(); // Define o mês/ano inicial na Home e carrega as contas
+        });
+    </script>
+</body>
+</html>
